@@ -65,3 +65,16 @@ The interpreter is limited and probably will crash a lot as you play with it. To
 * `ex` recursively applies verbs to nouns (arrays) from right-to-left, like APL does.
 * `wd` tokenizes string and builds verbs and nouns (in a weird way, as ints). Numeric literals can only be single-digit.
 * There are no error checks and interpreter will crash on invalid input.
+
+## rust port
+
+I decided to rewrite it in Rust to understand better how it works, to make it more stable, and to actually learn Rust. If something is not idiomatic and can be improved (without making it significantly larger) - please open an issue or contact me.
+
+The port differs from the original interpreter:
+
+* Longer variable name and numeric literals are allowed.
+* More error checks.
+* Element enum type is introduced to avoid array and i64 mixing/casting.
+* Token type is introduced to pass data from tokenizer to evaluator in a sane way.
+
+If you think of other verbs that can easily be added without sacrificing the code size - please let me know. I hope this interpreter could become a good entry point to the world of J, K and APL. Have fun!
