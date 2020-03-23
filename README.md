@@ -4,7 +4,7 @@ Rewrite of Arthur Whitney's one-page J interpreter in Rust.
 
 > One summer weekend in 1989, Arthur Whitney visited Ken Iverson at Kiln Farm and produced—on one page and in one afternoon—an interpreter fragment on the AT&T 3B1 computer. I studied this interpreter for about a week for its organization and programming style; and on Sunday, August 27, 1989, at about four o'clock in the afternoon, wrote the first line of code that became the implementation described in this document.
 
-Arthur's one-page interpreter fragment is as follows (I only change `I` type from `long` to `long long` to fit 64-bit systems):
+Arthur's one-page interpreter fragment is as follows (I only changed `I` type from `long` to `long long` to fit 64-bit systems):
 
 ```c
 typedef char C;typedef long long I;
@@ -50,3 +50,18 @@ I *wd(s)C *s;{I a,n=strlen(s),*e=ma(n+1);C c;
 
 main(){C s[99];while(gets(s))pr(ex(wd(s)));}
 ```
+
+The interpreter is limited and probably will crash a lot as you play with it. To help you understand the logic of this highly obfuscated code, here's some hints:
+
+* `A` type is the core data type, it's an array.
+* `A.t` is "box" flag (when another array is stored as an element of this one).
+* `A.r` is "rank", i.e. how many dimensions this array has. Array data is stored flat, and shape is stored separately. 
+* `A.d` is "depth", i.e. how big the array is in each direction.
+* `A.p` is array data. Elements can be either numbers (`I`), or other array pointers (`A`). That's why `sizeof(I)` should fit a pointer.
+* `ma` is memory allocator, `mv` copies data from one array of numbers to another, `tr` returns number of elements in an array in all its dimensions by multiplying them, `ga` is a constructor for arrays.
+* `V1` are monads (functions of one array), `V2` are dyads (working with two arrays). The table of verbs (functions) is stored in `vt`, `vd` and `vm`.
+* `pr` prints an array, showing its dimensions (if any), its data and a boxing symbol "<" when needed.
+* `st` is variable storage. Variables can be single-letter lowercase symbols. Thus, there can be only 26 variables.
+* `ex` recursively applies verbs to nouns (arrays) from right-to-left, like APL does.
+* `wd` tokenizes string and builds verbs and nouns (in a weird way, as ints). Numeric literals can only be single-digit.
+* There are no error checks and interpreter will crash on invalid input.
