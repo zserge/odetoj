@@ -4,8 +4,7 @@ use std::io::BufRead;
 #[derive(Debug, Clone)]
 struct Array {
     boxed: bool,
-    rank: i64,
-    depth: [i64; 3],
+    depth: Vec<i64>,
     data: Vec<Element>,
 }
 
@@ -13,6 +12,16 @@ struct Array {
 enum Element {
     Array(Array),
     Number(i64),
+}
+
+impl Element {
+    fn to_i64(&self) -> i64 {
+        if let Element::Number(n) = self {
+            *n
+        } else {
+            0
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -32,17 +41,16 @@ fn tr(r: i64, d: &[i64]) -> i64 {
 
 impl std::fmt::Display for Array {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        (0..self.rank).for_each(|i| {
-            write!(f, "{} ", self.depth[i as usize]);
-        });
+        for d in &self.depth {
+            write!(f, "{} ", d);
+        }
         write!(f, "\n")?;
-        let n = tr(self.rank, &self.depth);
-        (0..n).for_each(|i| {
-            match &self.data[i as usize] {
+        for el in &self.data {
+            match el {
                 Element::Array(arr) => write!(f, "< {} ", arr),
                 Element::Number(n) => write!(f, "{} ", n),
             };
-        });
+        }
         write!(f, "\n")?;
         Ok(())
     }
@@ -51,8 +59,7 @@ impl std::fmt::Display for Array {
 fn array_from_i64(n: i64) -> Array {
     Array {
         boxed: false,
-        rank: 0,
-        depth: [0, 0, 0],
+        depth: vec![],
         data: vec![Element::Number(n)],
     }
 }
@@ -69,8 +76,7 @@ fn iota(a: Array) -> Array {
     if let Element::Number(n) = a.data[0] {
         Array {
             boxed: false,
-            rank: 1,
-            depth: [n, 0, 0],
+            depth: vec![n],
             data: (0..n).map(|i| Element::Number(i)).collect(),
         }
     } else {
@@ -81,8 +87,7 @@ fn iota(a: Array) -> Array {
 fn boxing(a: Array) -> Array {
     Array {
         boxed: true,
-        rank: 0,
-        depth: [0, 0, 0],
+        depth: vec![],
         data: vec![Element::Array(a)],
     }
 }
@@ -90,40 +95,34 @@ fn boxing(a: Array) -> Array {
 fn sha(a: Array) -> Array {
     Array {
         boxed: false,
-        rank: 1,
-        depth: [a.rank, 0, 0],
-        data: (0..a.rank)
-            .map(|i| Element::Number(a.depth[i as usize]))
-            .collect(),
+        depth: vec![a.depth.len() as i64],
+        data: a.depth.iter().map(|&d| Element::Number(d)).collect(),
     }
 }
 
 fn at(a: &Array, i: i64) -> i64 {
     if (i as usize) < a.data.len() {
-        if let Element::Number(n) = a.data[i as usize] {
-            return n;
-        }
+        a.data[i as usize].to_i64()
+    } else {
+        0
     }
-    return 0;
 }
 
 fn plus(a: Array, b: Array) -> Array {
     Array {
         boxed: false,
-        rank: b.rank,
-        depth: b.depth,
-        data: (0..tr(b.rank, &b.depth))
+        depth: b.depth.clone(),
+        data: (0..b.depth.len() as i64)
             .map(|i| Element::Number(at(&a, i) + at(&b, i)))
             .collect(),
     }
 }
 
 fn from(a: Array, b: Array) -> Array {
-    let n = tr(b.rank - 1, &[b.depth[1], b.depth[2], 0]);
+    let n = tr(b.depth.len() as i64 - 1, &b.depth[1..]);
     Array {
         boxed: b.boxed,
-        rank: b.rank - 1,
-        depth: [b.depth[1], b.depth[2], 0],
+        depth: b.depth[1..].to_vec(),
         data: (0..n)
             .map(|i| b.data[(i + n * at(&a, 0)) as usize].clone())
             .collect(),
@@ -131,7 +130,7 @@ fn from(a: Array, b: Array) -> Array {
 }
 
 fn rsh(a: Array, b: Array) -> Array {
-    let n = if a.rank == 0 {
+    let n = if a.depth.len() as i64 == 0 {
         at(&a, 0)
     } else {
         let depth: Vec<i64> = (0..a.depth[0]).map(|i| at(&a, i)).collect();
@@ -139,8 +138,7 @@ fn rsh(a: Array, b: Array) -> Array {
     };
     Array {
         boxed: b.boxed,
-        rank: if a.rank == 0 { 1 } else { a.depth[0] },
-        depth: [at(&a, 0), at(&a, 1), at(&a, 2)],
+        depth: a.data.iter().map(|x| x.to_i64()).collect(),
         data: b
             .data
             .iter()
@@ -152,13 +150,12 @@ fn rsh(a: Array, b: Array) -> Array {
 }
 
 fn cat(a: Array, b: Array) -> Array {
-    let an = tr(a.rank, &a.depth);
-    let bn = tr(b.rank, &b.depth);
+    let an = tr(a.depth.len() as i64, &a.depth);
+    let bn = tr(b.depth.len() as i64, &b.depth);
     let n = an + bn;
     Array {
         boxed: b.boxed,
-        rank: 1,
-        depth: [n as i64, 0, 0],
+        depth: vec![n as i64],
         data: (0..n)
             .map(|i| {
                 if i < an {
