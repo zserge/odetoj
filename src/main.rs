@@ -3,7 +3,6 @@ use std::io::BufRead;
 
 #[derive(Debug, Clone)]
 struct Array {
-    boxed: bool,
     depth: Vec<i64>,
     data: Vec<Element>,
 }
@@ -39,6 +38,13 @@ fn tr(d: &[i64]) -> i64 {
     z
 }
 
+fn boxed(a: &Array) -> bool {
+    a.data.iter().any(|x| match x {
+        Element::Array(_) => true,
+        _ => false,
+    })
+}
+
 impl std::fmt::Display for Array {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         for d in &self.depth {
@@ -58,7 +64,6 @@ impl std::fmt::Display for Array {
 
 fn array_from_i64(n: i64) -> Array {
     Array {
-        boxed: false,
         depth: vec![],
         data: vec![Element::Number(n)],
     }
@@ -69,13 +74,12 @@ fn id(a: Array) -> Array {
 }
 
 fn size(a: Array) -> Array {
-    array_from_i64(if a.boxed { a.depth[0] } else { 1 })
+    array_from_i64(if boxed(&a) { a.depth[0] } else { 1 })
 }
 
 fn iota(a: Array) -> Array {
     if let Element::Number(n) = a.data[0] {
         Array {
-            boxed: false,
             depth: vec![n],
             data: (0..n).map(|i| Element::Number(i)).collect(),
         }
@@ -86,7 +90,6 @@ fn iota(a: Array) -> Array {
 
 fn boxing(a: Array) -> Array {
     Array {
-        boxed: true,
         depth: vec![],
         data: vec![Element::Array(a)],
     }
@@ -94,7 +97,6 @@ fn boxing(a: Array) -> Array {
 
 fn sha(a: Array) -> Array {
     Array {
-        boxed: false,
         depth: vec![a.depth.len() as i64],
         data: a.depth.iter().map(|&d| Element::Number(d)).collect(),
     }
@@ -110,7 +112,6 @@ fn at(a: &Array, i: i64) -> i64 {
 
 fn plus(a: Array, b: Array) -> Array {
     Array {
-        boxed: false,
         depth: b.depth.clone(),
         data: (0..b.depth.len() as i64)
             .map(|i| Element::Number(at(&a, i) + at(&b, i)))
@@ -121,7 +122,6 @@ fn plus(a: Array, b: Array) -> Array {
 fn from(a: Array, b: Array) -> Array {
     let n = tr(&b.depth[1..]);
     Array {
-        boxed: b.boxed,
         depth: b.depth[1..].to_vec(),
         data: (0..n)
             .map(|i| b.data[(i + n * at(&a, 0)) as usize].clone())
@@ -137,7 +137,6 @@ fn rsh(a: Array, b: Array) -> Array {
         tr(&depth)
     };
     Array {
-        boxed: b.boxed,
         depth: a.data.iter().map(|x| x.to_i64()).collect(),
         data: b
             .data
@@ -154,7 +153,6 @@ fn cat(a: Array, b: Array) -> Array {
     let bn = tr(&b.depth);
     let n = an + bn;
     Array {
-        boxed: b.boxed,
         depth: vec![n as i64],
         data: (0..n)
             .map(|i| {
