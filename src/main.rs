@@ -31,11 +31,11 @@ enum Token {
     Verb(char),
 }
 
-fn tr(r: i64, d: &[i64]) -> i64 {
+fn tr(d: &[i64]) -> i64 {
     let mut z = 1;
-    (0..r).for_each(|i| {
-        z = z * d[i as usize];
-    });
+    for x in d {
+        z = z * x;
+    }
     z
 }
 
@@ -119,7 +119,7 @@ fn plus(a: Array, b: Array) -> Array {
 }
 
 fn from(a: Array, b: Array) -> Array {
-    let n = tr(b.depth.len() as i64 - 1, &b.depth[1..]);
+    let n = tr(&b.depth[1..]);
     Array {
         boxed: b.boxed,
         depth: b.depth[1..].to_vec(),
@@ -134,7 +134,7 @@ fn rsh(a: Array, b: Array) -> Array {
         at(&a, 0)
     } else {
         let depth: Vec<i64> = (0..a.depth[0]).map(|i| at(&a, i)).collect();
-        tr(a.depth[0], &depth)
+        tr(&depth)
     };
     Array {
         boxed: b.boxed,
@@ -150,8 +150,8 @@ fn rsh(a: Array, b: Array) -> Array {
 }
 
 fn cat(a: Array, b: Array) -> Array {
-    let an = tr(a.depth.len() as i64, &a.depth);
-    let bn = tr(b.depth.len() as i64, &b.depth);
+    let an = tr(&a.depth);
+    let bn = tr(&b.depth);
     let n = an + bn;
     Array {
         boxed: b.boxed,
